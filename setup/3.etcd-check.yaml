@@ -1,0 +1,4 @@
+# check etcd cluster
+- hosts: localhost
+  roles:
+  - etcd-check

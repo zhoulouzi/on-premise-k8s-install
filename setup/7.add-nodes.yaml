@@ -1,0 +1,11 @@
+- hosts: new-node
+  roles:
+  - docker-ce
+  
+- hosts: new-node
+  roles:
+  - kubernetes
+
+- hosts: new-node
+  roles:
+  - machine-init

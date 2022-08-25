@@ -1,0 +1,33 @@
+---
+    - name: Add kubernetes repo
+      template:
+        dest: /etc/yum.repos.d/kubernetes.repo
+        src: templates/kubernetes.repo
+
+    - name: make /apps/kubelet
+      file:
+        path: /apps/kubelet
+        state: directory
+        owner: root
+        group: root
+        mode: 0644
+
+    # edit fstab
+    - name: fstab edit
+      mount:
+        path: "/var/lib/kubelet"
+        src: "/apps/kubelet"
+        fstype: none
+        opts: bind
+        state: mounted
+
+    - name: install kubelet kubeadm
+      yum:
+        name: "{{ item }}"
+        state: present
+        update_cache: yes
+      loop:
+        - kubelet-{{ KUBERNETES_VERSION }}-0
+        - kubeadm-{{ KUBERNETES_VERSION }}-0
+      notify:
+        - start kubelet

@@ -1,0 +1,14 @@
+---
+    - name: start nginx
+      systemd:
+        state: started
+        name: nginx
+        daemon_reload: yes
+        enabled: yes
+
+    - name: start keepalived
+      systemd:
+        state: started
+        name: keepalived
+        daemon_reload: yes
+        enabled: yes

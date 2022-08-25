@@ -1,0 +1,75 @@
+# hosts for install kubenretes cluster
+
+# etcd集群请提供如下NODE_NAME，推荐1，3，5个成员
+[etcd]
+al-bj-sre-kubernetes-etcd01 ansible_host=172.16.18.199 NODE_NAME=etcd1
+al-bj-sre-kubernetes-etcd02 ansible_host=172.16.18.200 NODE_NAME=etcd2
+al-bj-sre-kubernetes-etcd03 ansible_host=172.16.5.241  NODE_NAME=etcd3
+
+[kube-master-start]
+al-bj-sre-kubernetes-master01 ansible_host=172.16.18.204 Region=cn-beijing Zone=cn-beijing-f
+
+[kube-master-second]
+al-bj-sre-kubernetes-master02 ansible_host=172.16.18.203 Region=cn-beijing Zone=cn-beijing-f
+al-bj-sre-kubernetes-master03 ansible_host=172.16.20.66 Region=cn-beijing Zone=cn-beijing-e
+
+[kube-node]
+al-bj-sre-kubernetes-node01 ansible_host=172.16.5.243 Region=cn-beijing Zone=cn-beijing-a
+al-bj-sre-kubernetes-node02 ansible_host=172.16.5.242 Region=cn-beijing Zone=cn-beijing-a
+al-bj-sre-kubernetes-node03 ansible_host=172.16.33.110 Region=cn-beijing Zone=cn-beijing-h
+al-bj-sre-kubernetes-node04 ansible_host=172.16.34.78 Region=cn-beijing Zone=cn-beijing-h
+al-bj-sre-kubernetes-node05 ansible_host=172.16.34.86 Region=cn-beijing Zone=cn-beijing-h
+al-bj-sre-kubernetes-node06 ansible_host=172.16.34.85 Region=cn-beijing Zone=cn-beijing-h
+
+[kube-master:children]
+kube-master-start
+kube-master-second
+
+[kube:children]
+kube-master
+kube-node
+
+# 预留组，后续添加etcd节点使用
+[new-etcd]
+#192.168.1.xx
+
+# 预留组，后续添加master节点使用
+[new-master]
+#192.168.1.5
+
+# 预留组，后续添加node节点使用
+[new-node]
+al-bj-sre-kubernetes-node04 ansible_host=172.16.34.78 Region=cn-beijing Zone=cn-beijing-h
+al-bj-sre-kubernetes-node05 ansible_host=172.16.34.86 Region=cn-beijing Zone=cn-beijing-h
+al-bj-sre-kubernetes-node06 ansible_host=172.16.34.85 Region=cn-beijing Zone=cn-beijing-h
+
+################################################
+[all:vars]
+# Ansible deploy packege path end without /
+CONTROL_BASE_DIR="/root/sre/torres/cluster/sre-kubernetes"
+SETUP_TOOLS_DIR="/root/sre/torres/setup"
+
+# 云环境的负载均衡 均为4层
+APISERVER_DOMAIN="sre-kubernetes.example.com"
+APISERVER_LB="172.16.18.202"
+ETCD_LB="172.16.18.201"
+
+# 确定各个组件版本
+ETCD_VERSION=v3.3.10
+DOCKER_VERSION=19.03.4
+CONTAINERD_VERSION=1.2.10
+KUBERNETES_VERSION=1.16.7
+
+# bootstrapTokens
+BOOTSTRAPTOKEN="abcdef.0123456789abcdef"
+# bootstrapTokens ttl
+BOOTSTRAPTOKEN_TTL="24h0m0s"
+# 服务网段 (Service CIDR），注意不要与内网已有网段冲突
+SERVICE_CIDR="10.0.0.0/16"
+# 集群 DNS 服务 IP (从 SERVICE_CIDR 中预分配)
+CLUSTER_DNS_SVC_IP="10.0.0.10"
+# POD 网段 (Cluster CIDR），注意不要与内网已有网段冲突
+CLUSTER_POD_CIDR="10.100.0.0/16"
+
+# calico 网卡检测
+IP_AUTODETECTION_METHOD="interface=eth0"

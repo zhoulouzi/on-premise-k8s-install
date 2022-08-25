@@ -1,0 +1,3 @@
+- hosts: nginx-keepalived
+  roles:
+  - nginx-keepalived

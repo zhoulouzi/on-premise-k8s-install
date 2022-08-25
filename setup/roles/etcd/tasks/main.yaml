@@ -1,0 +1,37 @@
+- name: mkdir require dir for etcd
+  file:
+    name: "{{ item }}"
+    state: directory
+  loop:
+  - /apps/srv/etcd/
+  - /apps/srv/etcd/bin/
+  - /apps/srv/etcd/certs/
+  - /apps/srv/etcd/data/
+
+- name: download etcd binary
+  get_url:
+    url: "{{ item.url}}"
+    dest: "/apps/srv/etcd/{{ item.destpath }}"
+    mode: '{{item.mode}}'
+  loop:
+    - { url: 'https://oss.aliyuncs.com/kubernetes-packages/etcd-binaries/{{ ETCD_VERSION }}/etcd', destpath: 'bin/etcd', mode: '0755'}
+    - { url: 'https://oss.aliyuncs.com/kubernetes-packages/etcd-binaries/{{ ETCD_VERSION }}/etcdctl', destpath: 'bin/etcdctl', mode: '0755'}
+
+- name: copy etcd certs
+  copy:
+    src: "{{ CONTROL_BASE_DIR }}/certs/etcd/{{ item }}"
+    dest: "/apps/srv/etcd/certs/{{ item }}"
+  loop:
+    - "etcd-ca.pem"
+    # - "etcd-ca-key.pem"
+    - "etcd-server.pem"
+    - "etcd-server-key.pem"
+    - "{{ inventory_hostname }}-peer.pem"
+    - "{{ inventory_hostname }}-peer-key.pem"
+
+- name: copy etcd systemd config
+  template:
+      dest: /lib/systemd/system/etcd.service
+      src: templates/etcd.systemd.service
+  notify:
+    - start etcd

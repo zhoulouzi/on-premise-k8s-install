@@ -1,0 +1,3 @@
+- hosts: lvs-keepalived
+  roles:
+  - lvs-keepalived

@@ -1,0 +1,31 @@
+[Unit]
+Description=etcd key-value store
+Documentation=https://github.com/etcd-io/etcd
+After=network.target
+
+[Service]
+Type=notify
+WorkingDirectory=/apps/srv/etcd/
+ExecStart=/apps/srv/etcd/bin/etcd \
+  --name={{ NODE_NAME }} \
+  --cert-file=/apps/srv/etcd/certs/etcd-server.pem \
+  --key-file=/apps/srv/etcd/certs/etcd-server-key.pem \
+  --peer-cert-file=/apps/srv/etcd/certs/{{ inventory_hostname }}-peer.pem \
+  --peer-key-file=/apps/srv/etcd/certs/{{ inventory_hostname }}-peer-key.pem \
+  --trusted-ca-file=/apps/srv/etcd/certs/etcd-ca.pem \
+  --peer-trusted-ca-file=/apps/srv/etcd/certs/etcd-ca.pem \
+  --initial-advertise-peer-urls=https://{{ ansible_host }}:2380 \
+  --listen-peer-urls=https://{{ ansible_host }}:2380 \
+  --listen-client-urls=https://{{ ansible_host }}:2379,https://127.0.0.1:2379 \
+  --advertise-client-urls=https://{{ ansible_host }}:2379 \
+  --initial-cluster-token=etcd-cluster \
+  --initial-cluster={% for host in groups['etcd'] %}{{hostvars[host]['NODE_NAME']}}=https://{{ hostvars[host]['ansible_host'] }}:2380{% if not loop.last %},{% endif %}{% endfor %} \
+  --initial-cluster-state=new \
+  --data-dir=/apps/srv/etcd/data/
+
+Restart=on-failure
+RestartSec=5
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target

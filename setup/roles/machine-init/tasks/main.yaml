@@ -1,0 +1,120 @@
+---
+- name: clean firewall for centos
+  yum:
+    name:
+      - firewalld
+      - python-firewall
+      - firewalld-filesystem
+    state: absent
+
+- name: install base packages
+  yum:
+    name:
+      - conntrack-tools     # for kube-proxy ipvs
+      - nfs-utils           # for nfs mount
+      - socat               # for kubectl port-fowaridng
+      - ipset
+      - ipvsadm
+    state: present
+
+- name: disable selinux
+  shell: "setenforce 0"
+  failed_when: false
+
+- name: disable selinux permanent
+  lineinfile:
+    dest: /etc/selinux/config
+    regexp: "^SELINUX="
+    line: "SELINUX=disabled"
+
+- name: disable swap
+  shell: "swapoff -a && sysctl -w vm.swappiness=0"
+  ignore_errors: true
+
+- name: handle swap in /etc/fstab
+  lineinfile:
+    path: /etc/fstab
+    regexp: swap
+    state: absent
+
+- name: load kernel modules
+  modprobe:
+    name: "{{ item }}"
+    state: present
+  loop:
+    - br_netfilter
+    - ip_vs
+    - ip_vs_rr
+    - ip_vs_wrr
+    - ip_vs_sh
+    - nf_conntrack
+    - nf_conntrack_ipv4
+  ignore_errors: true
+
+- name: enable systemd-modules-load
+  systemd:
+    name: systemd-modules-load
+    state: started
+    enabled: yes
+
+- name: coustom modules load config
+  template:
+    src: 10-kubernetes-modules.conf
+    dest: /etc/modules-load.d/10-kubernetes-modules.conf
+
+- sysctl:
+    name: net.ipv4.ip_forward
+    sysctl_file: /etc/sysctl.conf
+    value: 1
+    reload: yes
+    sysctl_set: yes
+    state: present
+
+- sysctl:
+    name: net.bridge.bridge-nf-call-iptables
+    sysctl_file: /etc/sysctl.conf
+    value: 1
+    reload: yes
+    sysctl_set: yes
+    state: present
+
+- sysctl:
+    name: net.bridge.bridge-nf-call-ip6tables
+    sysctl_file: /etc/sysctl.conf
+    value: 1
+    reload: yes
+    sysctl_set: yes
+    state: present
+
+- sysctl:
+    name: net.bridge.bridge-nf-call-arptables
+    sysctl_file: /etc/sysctl.conf
+    value: 1
+    reload: yes
+    sysctl_set: yes
+    state: present
+
+- sysctl:
+    name: vm.swappiness
+    sysctl_file: /etc/sysctl.conf
+    value: 0
+    reload: yes
+    sysctl_set: yes
+    state: present
+
+- sysctl:
+    name: vm.max_map_count
+    sysctl_file: /etc/sysctl.conf
+    value: 655360
+    reload: yes
+    sysctl_set: yes
+    state: present
+
+- sysctl:
+    name: net.netfilter.nf_conntrack_max
+    sysctl_file: /etc/sysctl.conf
+    value: 1000000
+    reload: yes
+    sysctl_set: yes
+    state: present
+

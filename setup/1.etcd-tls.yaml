@@ -1,0 +1,4 @@
+# prepare etcd tls
+- hosts: localhost
+  roles:
+  - etcd-tls

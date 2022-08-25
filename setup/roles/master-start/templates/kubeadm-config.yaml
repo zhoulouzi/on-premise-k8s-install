@@ -1,0 +1,103 @@
+apiVersion: kubeadm.k8s.io/v1beta2
+kind: InitConfiguration
+bootstrapTokens:
+- groups:
+  - system:bootstrappers:kubeadm:default-node-token
+  token: {{ BOOTSTRAPTOKEN }}
+  ttl: {{ BOOTSTRAPTOKEN_TTL }}
+  usages:
+  - signing
+  - authentication
+localAPIEndpoint:
+  advertiseAddress: {{ ansible_host }}
+  bindPort: 6443
+nodeRegistration:
+  criSocket: /var/run/dockershim.sock
+  name: {{ inventory_hostname }}
+  taints:
+  - effect: NoSchedule
+    key: node-role.kubernetes.io/master
+---
+apiVersion: kubeadm.k8s.io/v1beta2
+kind: ClusterConfiguration
+clusterName: kubernetes
+controlPlaneEndpoint: {{ APISERVER_LB }}:6443
+imageRepository: registry.aliyuncs.com/google_containers
+dns:
+  type: CoreDNS
+etcd:
+  external:
+    caFile: /etc/kubernetes/pki/etcd/ca.crt
+    certFile: /etc/kubernetes/pki/apiserver-etcd-client.crt
+    keyFile: /etc/kubernetes/pki/apiserver-etcd-client.key
+    endpoints:
+{% for host in groups['etcd'] %}
+      - https://{{ hostvars[host]['ansible_host'] }}:2379
+{% endfor %}
+
+kubernetesVersion: v{{ KUBERNETES_VERSION }}
+networking:
+  dnsDomain: cluster.local
+  serviceSubnet: {{ SERVICE_CIDR }}
+  podSubnet: {{ CLUSTER_POD_CIDR }}
+apiServer:
+  timeoutForControlPlane: 4m0s
+  certSANs:
+    - 127.0.0.1
+    - localhost
+    - {{ APISERVER_LB }}
+  extraArgs:
+    advertise-address: 0.0.0.0
+    anonymous-auth: "true"
+    allow-privileged: "true"
+    authorization-mode: "Node,RBAC"
+    profiling: "false"
+    service-cluster-ip-range: {{ SERVICE_CIDR }}
+    enable-bootstrap-token-auth: "true"
+    enable-aggregator-routing: "true"
+    kubelet-preferred-address-types: InternalIP,ExternalIP,Hostname
+controllerManager:
+  extraArgs:
+    bind-address: 0.0.0.0
+scheduler:
+  extraArgs:
+    address: 0.0.0.0
+---
+apiVersion: kubeproxy.config.k8s.io/v1alpha1
+kind: KubeProxyConfiguration
+bindAddress: 0.0.0.0
+conntrack:
+  maxPerCore: 32768
+  min: 131072
+  tcpCloseWaitTimeout: 1h0m0s
+  tcpEstablishedTimeout: 24h0m0s
+enableProfiling: false
+healthzBindAddress: 0.0.0.0:10256
+mode: "ipvs"
+ipvs:
+  excludeCIDRs:
+  - {{ KUBE_PROXY_IPVS_EXCLUDECIDRS }}
+  minSyncPeriod: 0s
+  scheduler: ""
+  strictARP: true
+  syncPeriod: 30s
+metricsBindAddress: 0.0.0.0:10249
+---
+apiVersion: kubelet.config.k8s.io/v1beta1
+kind: KubeletConfiguration
+address: 0.0.0.0
+cgroupDriver: systemd
+clusterDNS:
+- {{ CLUSTER_DNS_SVC_IP }}
+clusterDomain: cluster.local
+evictionHard:
+  imagefs.available: 15%
+  memory.available: 300Mi
+  nodefs.available: 10%
+  nodefs.inodesFree: 5%
+systemReserved:
+  memory: 300Mi
+kubeReserved:
+  memory: 400Mi
+maxPods: 100
+rotateCertificates: true

@@ -1,0 +1,23 @@
+{
+  "CN": "etcd-cluster",
+  "key": {
+    "algo": "rsa",
+    "size": 2048
+  },
+  "names": [
+    {
+      "C": "CN",
+      "L": "BJ",
+      "ST": "BJ",
+      "O": "Torres",
+      "OU": "Operations"
+    }
+  ],
+  "hosts": [
+    "127.0.0.1",
+    "localhost",
+{% for host in groups['etcd'] %}
+    "{{ hostvars[host]['ansible_host'] }}"{% if not loop.last %},{% endif %}
+{% endfor %}
+  ]
+}

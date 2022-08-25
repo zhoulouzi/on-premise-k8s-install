@@ -1,0 +1,66 @@
+---
+    - sysctl:
+        name: net.ipv4.ip_forward
+        sysctl_file: /etc/sysctl.conf
+        value: 1
+        reload: yes
+        sysctl_set: yes
+        state: present
+
+    - sysctl:
+        name: net.ipv4.ip_nonlocal_bind
+        sysctl_file: /etc/sysctl.conf
+        value: 1
+        reload: yes
+        sysctl_set: yes
+        state: present
+
+    - sysctl:
+        name: net.core.netdev_max_backlog
+        sysctl_file: /etc/sysctl.conf
+        value: 65535
+        reload: yes
+        sysctl_set: yes
+        state: present
+
+    - sysctl:
+        name: net.ipv4.conf.all.arp_ignore
+        sysctl_file: /etc/sysctl.conf
+        value: 1
+        reload: yes
+        sysctl_set: yes
+        state: present
+
+    - sysctl:
+        name: net.ipv4.conf.all.arp_announce
+        sysctl_file: /etc/sysctl.conf
+        value: 2
+        reload: yes
+        sysctl_set: yes
+        state: present
+
+    - sysctl:
+        name: net.ipv4.conf.lo.arp_ignore
+        sysctl_file: /etc/sysctl.conf
+        value: 1
+        reload: yes
+        sysctl_set: yes
+        state: present
+
+    - sysctl:
+        name: net.ipv4.conf.lo.arp_announce
+        sysctl_file: /etc/sysctl.conf
+        value: 2
+        reload: yes
+        sysctl_set: yes
+        state: present
+
+    - name: handler /etc/rc.local ifconfig vip
+      lineinfile:
+        dest: /etc/rc.local
+        line: "/sbin/ifconfig lo:0 {{ APISERVER_LB }} netmask 255.255.255.255 broadcast {{ APISERVER_LB }}"
+
+    - name: handler /etc/rc.local route
+      lineinfile:
+        dest: /etc/rc.local
+        line: "/sbin/route add -host {{ APISERVER_LB }} dev lo:0"

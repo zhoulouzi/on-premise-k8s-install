@@ -1,0 +1,11 @@
+- hosts: kube
+  roles:
+  - docker-ce
+
+- hosts: kube
+  roles:
+  - kubernetes
+
+- hosts: kube
+  roles:
+  - machine-init

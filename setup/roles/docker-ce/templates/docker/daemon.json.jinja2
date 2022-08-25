@@ -1,0 +1,20 @@
+{
+    "registry-mirrors": [
+        "https://registry.docker-cn.com",
+        "https://docker.mirrors.ustc.edu.cn"
+    ],
+    "max-concurrent-downloads": 10,
+    "bip": "169.254.123.1/24",
+    "oom-score-adjust": -1000,
+    "live-restore": true,
+    "exec-opts": ["native.cgroupdriver=systemd"],
+    "log-driver": "json-file",
+    "log-opts": {
+       "max-size": "512m",
+       "max-file": "5"
+    },
+    "storage-driver": "overlay2",
+    "storage-opts": [
+       "overlay2.override_kernel_check=true"
+    ]
+}

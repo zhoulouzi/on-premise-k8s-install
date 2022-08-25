@@ -1,0 +1,77 @@
+- name: ansible control generate dirs for store certs
+  file:
+    path: "{{item}}"
+    state: directory
+    mode: 0755
+  loop:
+    - "{{ CONTROL_BASE_DIR }}/certs/"
+    - "{{ CONTROL_BASE_DIR }}/certs/etcd/"
+
+- name: copy all certs generate require file
+  template:
+    src: "templates/{{item.filename}}"
+    dest: "{{ CONTROL_BASE_DIR }}/{{item.destpath}}"
+  loop:
+    - {filename: 'ca_config.json', destpath: 'certs/ca_config.json'}
+    - {filename: 'etcd_ca.csr', destpath: 'certs/etcd/etcd_ca.csr'}
+    - {filename: 'etcd/etcd-client.csr', destpath: 'certs/etcd/etcd-client.csr'}
+    - {filename: 'etcd/etcd-server.csr', destpath: 'certs/etcd/etcd-server.csr'}
+
+- name: generate etcd-peer csr for bootstraper etcd member
+  template:
+    src: "templates/etcd/etcd-peer.csr.jinja2"
+    dest: "{{ CONTROL_BASE_DIR }}/certs/etcd/{{hostvars[item]['inventory_hostname']}}-peer.csr"
+  loop: "{{ groups['etcd'] }}"
+
+- name: check etcd ca certs exists
+  stat:
+    path: "{{ CONTROL_BASE_DIR }}/certs/etcd/etcd-ca.pem"
+  register: etcd_ca
+
+- name: generate etcd ca certs
+  shell: "{{ SETUP_TOOLS_DIR }}/bin/cfssl gencert \
+        -initca {{ CONTROL_BASE_DIR }}/certs/etcd/etcd_ca.csr | {{ SETUP_TOOLS_DIR }}/bin/cfssljson -bare {{ CONTROL_BASE_DIR }}/certs/etcd/etcd-ca"
+  when: etcd_ca.stat.exists == False
+
+- name: check etcd-client certs exists
+  stat:
+    path: "{{ CONTROL_BASE_DIR }}/certs/etcd/etcd-client.pem"
+  register: etcd_client
+
+- name: generate etcd-client certs
+  shell: "{{ SETUP_TOOLS_DIR }}/bin/cfssl gencert \
+        -ca={{ CONTROL_BASE_DIR }}/certs/etcd/etcd-ca.pem \
+        -ca-key={{ CONTROL_BASE_DIR }}/certs/etcd/etcd-ca-key.pem \
+        -config={{ CONTROL_BASE_DIR }}/certs/ca_config.json \
+        -profile=etcd {{ CONTROL_BASE_DIR }}/certs/etcd/etcd-client.csr | {{ SETUP_TOOLS_DIR }}/bin/cfssljson -bare {{ CONTROL_BASE_DIR }}/certs/etcd/etcd-client"
+  when: etcd_client.stat.exists == False
+
+- name: check etcd-server certs exists
+  stat:
+    path: "{{ CONTROL_BASE_DIR }}/certs/etcd/etcd-server.pem"
+  register: etcd_server
+
+- name: generate etcd-server certs
+  shell: "{{ SETUP_TOOLS_DIR }}/bin/cfssl gencert \
+        -ca={{ CONTROL_BASE_DIR }}/certs/etcd/etcd-ca.pem \
+        -ca-key={{ CONTROL_BASE_DIR }}/certs/etcd/etcd-ca-key.pem \
+        -config={{ CONTROL_BASE_DIR }}/certs/ca_config.json \
+        -profile=etcd {{ CONTROL_BASE_DIR }}/certs/etcd/etcd-server.csr | {{ SETUP_TOOLS_DIR }}/bin/cfssljson -bare {{ CONTROL_BASE_DIR }}/certs/etcd/etcd-server"
+  when: etcd_server.stat.exists == False
+
+- name: check etcd-peer certs exists
+  stat:
+    path: "{{ CONTROL_BASE_DIR }}/certs/etcd/{{hostvars[item]['inventory_hostname']}}-peer.pem"
+  loop: "{{ groups['etcd'] }}"
+  register: etcd_peer
+
+- name: generate etcd-peer certs
+  shell: "{{ SETUP_TOOLS_DIR }}/bin/cfssl gencert \
+        -ca={{ CONTROL_BASE_DIR }}/certs/etcd/etcd-ca.pem \
+        -ca-key={{ CONTROL_BASE_DIR }}/certs/etcd/etcd-ca-key.pem \
+        -config={{ CONTROL_BASE_DIR }}/certs/ca_config.json \
+        -profile=etcd {{ CONTROL_BASE_DIR }}/certs/etcd/{{hostvars[item.item]['inventory_hostname']}}-peer.csr | {{ SETUP_TOOLS_DIR }}/bin/cfssljson -bare {{ CONTROL_BASE_DIR }}/certs/etcd/{{hostvars[item.item]['inventory_hostname']}}-peer"
+  loop: "{{ etcd_peer.results }}"
+  when: item.stat.exists == False
+
+

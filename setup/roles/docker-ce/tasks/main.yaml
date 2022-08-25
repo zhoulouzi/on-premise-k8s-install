@@ -1,0 +1,79 @@
+---
+    - name: uninstall old versions of Docker
+      yum:
+        name: "{{ item }}"
+        state: absent
+      loop:
+        - docker
+        - docker-engine
+        - docker.io
+
+    # install using the repository
+    - name: install repository softs
+      yum:
+        name: "{{ item }}"
+        state: present
+        update_cache: yes
+      loop:
+        - yum-utils
+        - device-mapper-persistent-data
+        - lvm2
+        - parted
+
+    - name: download docker-ce repo
+      get_url:
+        url: https://mirrors.aliyun.com/docker-ce/linux/centos/docker-ce.repo
+        dest: /etc/yum.repos.d/docker-ce.repo
+        mode: 0644
+
+    - name: make /apps/docker
+      file:
+        path: /apps/docker
+        state: directory
+        owner: root
+        group: root
+        mode: 0644
+
+    # edit fstab
+    - name: fstab edit
+      mount:
+        path: "/var/lib/docker"
+        src: "/apps/docker"
+        fstype: none
+        opts: bind
+        state: mounted
+
+    - name: install docker-ce
+      yum:
+        name: "{{ item }}"
+        state: present
+        update_cache: yes
+      loop:
+        - containerd.io-{{ CONTAINERD_VERSION }}
+        - docker-ce-{{ DOCKER_VERSION }}
+        - docker-ce-cli-{{ DOCKER_VERSION }}
+      notify:
+        - start docker
+
+    - name: make /etc/docker/
+      file:
+        path: /etc/docker/
+        state: directory
+        owner: root
+        group: root
+        mode: 0644
+
+    - name: copy docker daemon.josn
+      template:
+        dest: /etc/docker/daemon.json
+        src: templates/docker/daemon.json.jinja2
+
+    - name: make /etc/systemd/system/docker.service.d
+      file:
+        path: /etc/systemd/system/docker.service.d
+        state: directory
+        owner: root
+        group: root
+        mode: 0644
+      notify:
+        - restart docker

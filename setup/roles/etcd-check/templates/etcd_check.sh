@@ -1,0 +1,2 @@
+#! /bin/bash
+ETCDCTL_API=3 {{ SETUP_TOOLS_DIR }}/bin/etcdctl --endpoints={% for host in groups['etcd'] %}https://{{ hostvars[host]['ansible_host'] }}:2379{% if not loop.last %},{% endif %}{% endfor %}  --cacert={{ CONTROL_BASE_DIR }}/certs/etcd/etcd-ca.pem --cert={{ CONTROL_BASE_DIR }}/certs/etcd/etcd-client.pem --key={{ CONTROL_BASE_DIR }}/certs/etcd/etcd-client-key.pem $@

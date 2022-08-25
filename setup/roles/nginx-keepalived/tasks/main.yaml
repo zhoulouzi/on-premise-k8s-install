@@ -1,0 +1,36 @@
+---
+    - name: install tools
+      yum:
+        name: "{{ item }}"
+        state: present
+        update_cache: yes
+      loop:
+        - nginx
+        - keepalived
+
+    - name: make /etc/nginx/stream.d/
+      file:
+        path: /etc/nginx/stream.d/
+        state: directory
+        owner: root
+        group: root
+        mode: 0644
+
+    - name: copy nginx stream config
+      template:
+        dest: /etc/nginx/stream.d/apiserver.conf
+        src: templates/stream.d/apiserver.conf
+
+    - name: copy nginx config
+      template:
+        dest: /etc/nginx/nginx.conf
+        src: templates/nginx.conf
+      notify:
+        - start nginx
+
+    - name: copy keepalived config
+      template:
+        dest: /etc/keepalived/keepalived.conf
+        src: templates/keepalived.conf
+      notify:
+        - start keepalived

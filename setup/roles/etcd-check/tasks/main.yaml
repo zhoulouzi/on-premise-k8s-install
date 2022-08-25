@@ -1,0 +1,8 @@
+- name: generate etcd script for check
+  template:
+      dest: "{{ CONTROL_BASE_DIR }}/etcd-check.sh"
+      src: templates/etcd_check.sh
+
+- name: run etcd-check.sh
+  shell: "/bin/bash {{ CONTROL_BASE_DIR }}/etcd-check.sh member list"
+

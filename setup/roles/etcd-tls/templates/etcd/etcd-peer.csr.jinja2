@@ -1,0 +1,21 @@
+{
+  "CN": "{{hostvars[item]['NODE_NAME']}}",
+  "key": {
+    "algo": "rsa",
+    "size": 2048
+  },
+  "names": [
+    {
+      "C": "CN",
+      "L": "BJ",
+      "ST": "BJ",
+      "O": "Torres",
+      "OU": "Operations"
+    }
+  ],
+  "hosts": [
+    "127.0.0.1",
+    "localhost",
+    "{{hostvars[item]['ansible_host']}}"
+  ]
+}

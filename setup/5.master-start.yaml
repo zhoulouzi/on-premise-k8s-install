@@ -1,0 +1,3 @@
+- hosts: kube-master-start
+  roles:
+  - master-start

@@ -1,0 +1,8 @@
+- name: generate calicoctl-script.sh
+  template:
+      dest: "{{ CONTROL_BASE_DIR }}/calicoctl-script.sh"
+      src: templates/calicoctl-script.sh
+
+- name: run etcd-check.sh
+  shell: "/bin/bash {{ CONTROL_BASE_DIR }}/calicoctl-script.sh get IPPools -o yaml"
+
